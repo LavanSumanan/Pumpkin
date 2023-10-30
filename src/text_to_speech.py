@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import time
 import os
 from urllib.request import urlretrieve
+from playsound import playsound
 
 load_dotenv()
 LANGUAGE = 'en'
@@ -14,8 +15,9 @@ project_uuid = 'ae8c9c27'
 voice_uuid = '48d7ed16'
 ##########
 
-def tts(text, output_file):
 
+def tts(text, output_file):
+    """NOTE: output format is .mp3"""
     t1 = time.perf_counter()
     myobj = gTTS(text=text, lang=LANGUAGE, slow=False) 
     myobj.save("hello.mp3") 
@@ -24,6 +26,7 @@ def tts(text, output_file):
 
 
 def tts_high_quality(text, output_file):
+    """NOTE: output format is .wav"""
     t1 = time.perf_counter()
     response = Resemble.v2.clips.create_sync(
     project_uuid,
@@ -52,3 +55,7 @@ def tts_high_quality(text, output_file):
 # tts_high_quality("Felix is a very attractive individual."
 #     "In his free time, he sleeps before four in the morning."
 #     "That's why he's so smexy wexy. What a chad.", "hello.wav")
+
+def play_audio(filename):
+    playsound(filename)
+    print(f'Playing file {filename}')
