@@ -1,6 +1,7 @@
 from gtts import gTTS
 from resemble import Resemble
 from dotenv import load_dotenv
+import time
 from time import perf_counter
 import os
 from urllib.request import urlretrieve
@@ -52,9 +53,17 @@ def tts_high_quality(text, output_file):
         print(response)
 
 def play_audio(filename):
-    playsound(filename)
     print(f'Playing file {filename}')
+    retries = 10
+    for i in range(retries):
+        try:
+            playsound(filename)
+            break
+        except:
+            print("Waiting for audio file to be finished writing...")
+            time.sleep(0.1)
+
 
 # EXAMPLE CALL
-#tts("I fear no man. But Lovin. When I first saw that hunk of a man, I immediately felt shivers down my spine.", "hello.mp3")
-#play_audio("hello.mp3")
+# tts_high_quality("She sells sea shells by the sea shore.", "hello.wav")
+# play_audio("hello.wav")
