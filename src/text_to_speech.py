@@ -5,10 +5,11 @@ import time
 from time import perf_counter
 import os
 from urllib.request import urlretrieve
-from playsound import playsound
+from pygame import mixer
 
 load_dotenv()
 LANGUAGE = 'en'
+mixer.init()
 
 ######### RESEMBLE CREDS
 Resemble.api_key(os.getenv("RESEMBLE_API_KEY"))
@@ -21,7 +22,7 @@ def tts(text, output_file):
     """NOTE: output format is .mp3"""
     t1 = perf_counter()
     myobj = gTTS(text=text, lang=LANGUAGE, slow=False) 
-    myobj.save("hello.mp3") 
+    myobj.save(output_file) 
     t2 = perf_counter()
     print(f"TTS low quality time taken:{t2 - t1}")
 
@@ -57,7 +58,10 @@ def play_audio(filename):
     retries = 10
     for i in range(retries):
         try:
-            playsound(filename)
+            mixer.music.load(filename)
+            mixer.music.play()
+            while mixer.music.get_busy() == True:
+                continue
             break
         except:
             print("Waiting for audio file to be finished writing...")
