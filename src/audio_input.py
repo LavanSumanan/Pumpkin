@@ -17,7 +17,7 @@ from speech_to_text import transcribe
 # Sampling frequency
 freq = 44100
 # Recording duration (s)
-duration_s = 3
+duration_s = 2
 
 def get_audio_chunk():
     print("started recording")
@@ -28,31 +28,42 @@ def get_audio_chunk():
     print("stopped recording")
     return recording    
 
-def get_avg_amplitude(chunk_array):
-    return sum(np.absolute(chunk_array))/len(chunk_array)
+def get_avg_amplitude(sample):
+    return sum(np.absolute(sample))/len(sample)
 
-def check_speech_started(threshold, chunk_array):
-    minimum_syllable_speech_time_s = 0.2
-    samples_per_syllable = int(freq * minimum_syllable_speech_time_s)
-    
-    i = 0
-    while i+samples_per_syllable < len(chunk_array):
-        if get_avg_amplitude(chunk_array[i:i+samples_per_syllable]) > threshold: return True
-        i += samples_per_syllable
-    
-    return False
-
-def check_speech_done(threshold, chunk_array):
-    return get_avg_amplitude(chunk_array) < threshold
-
-def get_avg_amplitude_of_samples(NUM_TRIALS):
+def get_avg_amplitude_of_samples(num_trials):
     samples = []
-    for i in range(NUM_TRIALS):
+    for i in range(num_trials):
         samples.append(get_audio_chunk())
     
     amps = [get_avg_amplitude(sample) for sample in samples]
     avg_amplitude = sum(amps)/len(amps)
     return avg_amplitude
+
+def check_speech_started(threshold, sample):
+    minimum_syllable_speech_time_s = 0.2
+    samples_per_syllable = int(freq * minimum_syllable_speech_time_s)
+    
+    i = 0
+    while i+samples_per_syllable < len(sample):
+        if get_avg_amplitude(sample[i:i+samples_per_syllable]) > threshold: return True
+        i += samples_per_syllable
+    
+    return False
+
+def check_speech_done(threshold, sample):
+    return get_avg_amplitude(sample) < threshold
+
+def check_speech_has_pause(threshold, sample):
+    pause_speech_time_s = 0.4
+    samples_per_pause = int(freq * pause_speech_time_s)
+    
+    i = 0
+    while i+samples_per_pause < len(sample):
+        if get_avg_amplitude(sample[i:i+samples_per_pause]) < threshold: return (True, i)
+        i += samples_per_pause
+    
+    return (False, i)
 
 # dummy function for testing GPT
 def get_audio_input_test(number):
@@ -62,15 +73,6 @@ def get_audio_input_test(number):
     ]
     return responses[number]
 
-# TODO
-"""
-check_for_pause function that goes through current sample,
-sees if there's a time interval of length n (determine n, guessing like 800ms or smth)
-in which the average amplitude falls below threshold.
-if so, combine the current recording list into one array and ship it off to another thread to
-start transcribing (w/ whisper), then wipe current recording list and keep recording in this thread
-"""
-
 """
 Requirements:
 1) start listening when kid starts speaking     ✅
@@ -78,17 +80,23 @@ Requirements:
 3) transcribe on the fly                        x
 """
 
-def main(threshold_avg):
+def get_audio_input(threshold_avg):
     print("##### RECORDING #####\n")
     recording = np.empty(0)
+    recordings_counter = 0
     
-    # transcriptions are tuples of shape (transcription: string, index: int)
-    transcriptions = Queue()
+    # raspberry pi 4 has 4 core CPU, one core is running this script
     MAX_PROCESSES = 3
-    transcribers = [Process(target=transcribe, args=()) for i in range(MAX_PROCESSES)]
-    transcribed_files = set()
+    # jobs are tuples of type (index: int, filename: string)
+        # insert False 3 times when recording ends (one to end each process)
+    jobs = Queue()
+    # results are tuples of type (index: int, transcription: string)
+    results = Queue()
+    processes = [Process(target=transcribe, args=(jobs, results)) for i in range(MAX_PROCESSES)]
+    for process in processes:
+        process.start()
 
-    startedSpeaking = False
+    started_speaking = False
 
     while True:
         t1 = perf_counter()
@@ -96,19 +104,72 @@ def main(threshold_avg):
         t2 = perf_counter()
         print("getting audio sample took ", round(t2-t1, 2), " seconds")
         
-        if not startedSpeaking:
-            startedSpeaking = check_speech_started(threshold_avg, sample)
+        if not started_speaking:
+            t1 = perf_counter()
+            started_speaking = check_speech_started(threshold_avg, sample)
+            t2 = perf_counter()
+            print("checking for pauses took ", round(t2-t1, 2), " seconds")
+            if started_speaking: print("---LOG: started speaking")
         
-        if startedSpeaking:
-            recording = np.append(recording, sample)
-            # whisper transcribing stuff
+        if started_speaking:
+            t1 = perf_counter()
+            (has_pause, pause_index) = check_speech_has_pause(threshold_avg, sample)
+            t2 = perf_counter()
+            print("checking for pauses took ", round(t2-t1, 2), " seconds")
+            # OpenAI whisper can't handle audio shorter than 0.1 seconds
+            current_recording_duration = (len(recording) + len(sample[:pause_index])) / freq
+            if has_pause and current_recording_duration > 0.1:
+                print("---LOG: pause detected")
+                # save up to the pause
+                recording = np.append(recording, sample[:pause_index])
+                # write current buffer to file
+                filename = f"recordings/recording{recordings_counter}.wav"
+                write(filename, freq, recording)
+                # send job to transcribe current buffer
+                jobs.put((recordings_counter, filename))
+                print('---LOG: sending job ', recordings_counter)
+                recordings_counter += 1
+                # reset recording but include the speech from after the pause
+                recording = np.array(sample[pause_index:])
+            else:
+                recording = np.append(recording, sample)
         
-        if startedSpeaking and check_speech_done(threshold_avg, sample):
+        if started_speaking and check_speech_done(threshold_avg, sample):
+            print("---LOG: end of speech")
+            current_recording_duration = len(recording) / freq
+            if current_recording_duration > 0.1:
+                # write leftover buffer to file and transcribe
+                filename = f"recordings/recording{recordings_counter}.wav"
+                write(filename, freq, recording)
+                jobs.put((recordings_counter, filename))
+            else:
+                recordings_counter -= 1
+            t1 = perf_counter()
+            # inform processes to stop looking for jobs
+            for i in range(MAX_PROCESSES):
+                jobs.put(False)
             break
 
-    # for i, sample in enumerate(recording):
-    write(f"audio_out/recording0.wav", freq, recording)
+    # end processes
+    for process in processes:
+        process.join()
+    t2 = perf_counter()
+    print("from end of speech to final transcription took ", round(t2-t1, 2), " seconds")
 
+    # files are a hashmap of type [index: int]: transcription: string
+    transcribed_files = {}
+    while not results.empty():
+        (index, transcription) = results.get()
+        transcribed_files[index] = transcription
+ 
+    full_transcription = ""
+    
+    for i in range(len(transcribed_files.keys())):
+        full_transcription += transcribed_files[i]
+
+    print(full_transcription)
+    return full_transcription
+    
     # Script
     """
     Felix is a very attractive individual.
@@ -117,4 +178,4 @@ def main(threshold_avg):
     """
 
 if __name__ == "__main__":
-    main(0.03056035)
+    get_audio_input(0.03056035)

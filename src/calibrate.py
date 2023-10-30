@@ -1,7 +1,7 @@
 # =========== IMPORTS ===========
 
 # imports for io and
-from gpiozero import LED, Button, MotionSensor
+from gpiozero import LED, Button
 from signal import pause
 
 # imports for utilities and multithreading
@@ -15,15 +15,10 @@ from audio_input import get_avg_amplitude_of_samples
 talk_led = LED(22)
 silence_led = LED(17)
 button = Button(27, hold_time=1)
-pir = MotionSensor(18)
-
-# =========== GLOBALS ===========
-THRESHOLD_AVG = 0
 
 # =========== INITIALIZATION ===========
 talk_led.off()
 silence_led.off()
-pir.wait_for_no_motion()
 NUM_CALIBRATION_TRIALS = 3
 
 def calibrate_threshold():
@@ -46,6 +41,5 @@ def calibrate_threshold():
 
 # =========== MAIN LOOP ===========
 button.when_held = calibrate_threshold
-# pir.when_motion = 
 
 pause()
