@@ -1,13 +1,16 @@
 # pulled from https://www.geeksforgeeks.org/create-a-voice-recorder-using-python/
 
-import soundfile as sf
-sd.default.latency = 'low'
 import sounddevice as sd
-import tempfile
+sd.default.latency = 'low'
+sd.default.device = 'USB PnP Sound Device'
+
 from scipy.io.wavfile import write
 import numpy as np
 
 from time import perf_counter, sleep
+from multiprocessing import Process, Queue
+
+from speech_to_text import transcribe
 
 # ===SETUP===
 
@@ -42,38 +45,14 @@ def check_speech_started(threshold, chunk_array):
 def check_speech_done(threshold, chunk_array):
     return get_avg_amplitude(chunk_array) < threshold
 
-def geometric_mean(*args):
-    mean = 1
-    n = 0
-    for arg in args:
-        n += 1
-        mean *= arg
-    return mean**(1/n)
-
-# determines THRESHOLD_AMPLITUDE to adjust to workplace/mic noise level
-def calibrate_threshold():
-    # list of nps
-    talking = []
-    NUM_TRIALS = 3
+def get_avg_amplitude_of_samples(NUM_TRIALS):
+    samples = []
     for i in range(NUM_TRIALS):
-        talking.append(get_audio_chunk())
+        samples.append(get_audio_chunk())
     
-    talking_amps = [get_avg_amplitude(sample) for sample in talking]
-    talking_avg_amplitude = sum(talking_amps)/len(talking_amps)
-    print("Talking avg amp: ", talking_avg_amplitude)
-    sleep(2)
-    
-    # list of nps
-    silence = []
-    for i in range(NUM_TRIALS):
-        silence.append(get_audio_chunk())
-    
-    silence_amps = [get_avg_amplitude(sample) for sample in silence]
-    silence_avg_amplitude = sum(silence_amps)/len(silence_amps)
-    print("Silence avg amp: ", silence_avg_amplitude)
-    sleep(2)
-
-    return geometric_mean(talking_avg_amplitude, silence_avg_amplitude)
+    amps = [get_avg_amplitude(sample) for sample in samples]
+    avg_amplitude = sum(amps)/len(amps)
+    return avg_amplitude
 
 # dummy function for testing GPT
 def get_audio_input_test(number):
@@ -99,21 +78,15 @@ Requirements:
 3) transcribe on the fly                        x
 """
 
-def main():
-    print("##### CALIBRATION #####\n")
-    # THRESHOLD_AVG = calibrate_threshold()
-    THRESHOLD_AVG = 0.01335005
-    print("THRESHOLD_AVG SET TO ", THRESHOLD_AVG)
-
-
-    sleep(1) # replace with waiting for motion to be detected
-    
+def main(threshold_avg):
     print("##### RECORDING #####\n")
     recording = np.empty(0)
-    with sf.SoundFile(args.filename, mode='x', samplerate=args.samplerate,channels=args.channels, subtype=args.subtype) as file:
-        with sd.InputStream(samplerate=args.samplerate, device=args.device,channels=args.channels, callback=callback):
-            while True:
-                file.write(q.get())
+    
+    # transcriptions are tuples of shape (transcription: string, index: int)
+    transcriptions = Queue()
+    MAX_PROCESSES = 3
+    transcribers = [Process(target=transcribe, args=()) for i in range(MAX_PROCESSES)]
+    transcribed_files = set()
 
     startedSpeaking = False
 
@@ -124,13 +97,13 @@ def main():
         print("getting audio sample took ", round(t2-t1, 2), " seconds")
         
         if not startedSpeaking:
-            startedSpeaking = check_speech_started(THRESHOLD_AVG, sample)
+            startedSpeaking = check_speech_started(threshold_avg, sample)
         
         if startedSpeaking:
             recording = np.append(recording, sample)
             # whisper transcribing stuff
         
-        if startedSpeaking and check_speech_done(THRESHOLD_AVG, sample):
+        if startedSpeaking and check_speech_done(threshold_avg, sample):
             break
 
     # for i, sample in enumerate(recording):
@@ -140,8 +113,8 @@ def main():
     """
     Felix is a very attractive individual.
     In his free time, he sleeps before four in the morning.
-    That's why he's not single. What a chad.
+    That's why he's so hot. What a chad.
     """
 
 if __name__ == "__main__":
-    main()
+    main(0.03056035)
