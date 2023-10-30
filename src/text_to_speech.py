@@ -18,7 +18,7 @@ voice_uuid = '48d7ed16'
 
 def tts(text, output_file):
     """NOTE: output format is .mp3"""
-    t1 = time.perf_counter()
+    t1 = perf_counter()
     myobj = gTTS(text=text, lang=LANGUAGE, slow=False) 
     myobj.save("hello.mp3") 
     t2 = perf_counter()
@@ -27,7 +27,7 @@ def tts(text, output_file):
 
 def tts_high_quality(text, output_file):
     """NOTE: output format is .wav"""
-    t1 = time.perf_counter()
+    t1 = perf_counter()
     response = Resemble.v2.clips.create_sync(
     project_uuid,
     voice_uuid,
@@ -51,11 +51,10 @@ def tts_high_quality(text, output_file):
         print("ERROR creating high quality TTS clip")
         print(response)
 
-# EXAMPLE CALL
-# tts_high_quality("Felix is a very attractive individual."
-#     "In his free time, he sleeps before four in the morning."
-#     "That's why he's so smexy wexy. What a chad.", "hello.wav")
-
 def play_audio(filename):
     playsound(filename)
     print(f'Playing file {filename}')
+
+# EXAMPLE CALL
+#tts("I fear no man. But Lovin. When I first saw that hunk of a man, I immediately felt shivers down my spine.", "hello.mp3")
+#play_audio("hello.mp3")
