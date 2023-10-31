@@ -4,12 +4,15 @@ import os
 
 import sounddevice as sd
 import soundfile as sf
-import numpy as np
-import time
+from time import perf_counter
+
+from multiprocessing import Process, Queue
 
 from collections import deque
 from dotenv import load_dotenv
 load_dotenv()
+
+from speech_to_text import transcribe, transcribe_multiprocessing
 
 
 
@@ -123,6 +126,17 @@ def get_audio():
     global recording_index
     global desired_recording_index
 
+    # raspberry pi 4 has 4 core CPU, one core is running this script
+    MAX_PROCESSES = 3
+    # jobs are tuples of type (index: int, filename: string)
+        # insert False 3 times when recording ends (one to end each process)
+    jobs = Queue()
+    # results are tuples of type (index: int, transcription: string)
+    results = Queue()
+    processes = [Process(target=transcribe_multiprocessing, args=(jobs, results)) for i in range(MAX_PROCESSES)]
+    for process in processes:
+        process.start()
+
     with sd.InputStream(samplerate=SAMPLE_RATE, device=sd.default.device, channels=CHANNELS, callback=callback):
         print("RECORDING...")
         while not STATUS_terminate:
@@ -132,11 +146,39 @@ def get_audio():
                 while True:
                     file.write(q.get())
                     if desired_recording_index > recording_index:
-                        #TODO multiprocess
+                        jobs.put((recording_index, filename))
                         break
                     if STATUS_terminate:
+                        jobs.put((recording_index, filename))
                         break
             recording_index += 1
+        t1 = perf_counter()
 
-reset(0.01)
-get_audio()
+    #terminate jobs
+    for i in range(MAX_PROCESSES):
+        jobs.put(False)
+    for process in processes:
+        process.join()
+    t2 = perf_counter()
+    print("from end of speech to final transcription took ", round(t2-t1, 2), " seconds")
+
+    # files are a hashmap of type [index: int]: transcription: string
+    transcribed_files = {}
+    while not results.empty():
+        (index, transcription) = results.get()
+        transcribed_files[index] = transcription
+ 
+    full_transcription = ""
+    
+    for i in range(len(transcribed_files.keys())):
+        full_transcription += transcribed_files[i]
+
+    print(full_transcription)
+    return full_transcription
+    
+
+
+## usage
+if __name__ == '__main__':   
+    reset(0.01)   # reset is MANDATORY
+    get_audio()
