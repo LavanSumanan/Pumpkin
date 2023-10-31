@@ -84,7 +84,7 @@ Requirements:
 def get_audio_input(threshold_avg):
     print("##### RECORDING #####\n")
     recording = np.empty(0)
-    filename = f"recordings/recording0.wav"
+    filename = f"../recordings/user/0.wav"
     
     started_speaking = False
 
@@ -152,7 +152,7 @@ def get_audio_input_multiprocessing(threshold_avg):
                 # save up to the pause
                 recording = np.append(recording, sample[:pause_index])
                 # write current buffer to file
-                filename = f"recordings/recording{recordings_counter}.wav"
+                filename = f"../recordings/user/{recordings_counter}.wav"
                 write(filename, freq, recording)
                 # send job to transcribe current buffer
                 jobs.put((recordings_counter, filename))
@@ -168,7 +168,7 @@ def get_audio_input_multiprocessing(threshold_avg):
             current_recording_duration = len(recording) / freq
             if current_recording_duration > 0.1:
                 # write leftover buffer to file and transcribe
-                filename = f"recordings/recording{recordings_counter}.wav"
+                filename = f"../recordings/user/{recordings_counter}.wav"
                 write(filename, freq, recording)
                 jobs.put((recordings_counter, filename))
             else:
