@@ -97,7 +97,7 @@ def run_main():
     if not THRESHOLD_AVG:
         print("Calibrate threshold!")
         play_audio(f'{warn_path}/calibrate_threshold.mp3')
-        for i in range(0,3):
+        for i in range(0,5):
             visible_led.on()
             sleep(0.3)
             visible_led.off()
