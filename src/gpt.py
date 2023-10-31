@@ -14,10 +14,6 @@ def reset_pumpkin_gpt():
     system_prompt_message = "Pretend to be a funny jack o lantern. A kid is trying to steal from your candy bowl! Respond as jack o lantern would with a short, one sentence answer.'"
     return [{"role": "system", "content": system_prompt_message}]
 
-def trigger_pumpkin_ask_question(messages):
-    messages.append({"role": "system", "content": "Now naturally shift the conversation to asking the kids 'Would you like a trick or a treat?'"})
-    return get_pumpkin_response(messages)
-
 def get_pumpkin_response(messages):
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
     messages.append(response["choices"][0]["message"])

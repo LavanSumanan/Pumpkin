@@ -20,7 +20,7 @@ sd.default.latency = 'low'
 sd.default.device = os.getenv("MIC")
 SAMPLE_RATE = 44100
 CHANNELS = 1
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "../recordings/user"
 SHORT_LENGTH = int(0.4 * SAMPLE_RATE)
 LONG_LENGTH = int(5.0 * SAMPLE_RATE)
 MIN_LENGTH = int(1.0 * SAMPLE_RATE)
@@ -80,7 +80,7 @@ def callback(indata, frames, _time, status):
 
 
     if status:
-        print(status, file=sys.stderr)
+        print("status: ", status, file=sys.stderr)
     if(STATUS_started):
         q.put(indata.copy())
 
@@ -140,7 +140,7 @@ def get_audio():
     with sd.InputStream(samplerate=SAMPLE_RATE, device=sd.default.device, channels=CHANNELS, callback=callback):
         print("RECORDING...")
         while not STATUS_terminate:
-            filename = f"{OUTPUT_DIR}/rec{recording_index}.wav"
+            filename = f"{OUTPUT_DIR}/{recording_index}.wav"
             with sf.SoundFile(filename, mode='x', samplerate=SAMPLE_RATE, channels=CHANNELS, subtype="PCM_24") as file:
                 print(f"Starting recording {recording_index}")
                 while True:
@@ -170,13 +170,18 @@ def get_audio():
  
     full_transcription = ""
     
-    for i in range(len(transcribed_files.keys())):
-        full_transcription += transcribed_files[i]
+    for i in range(len(transcribed_files.keys()) - 1):
+        if transcribed_files[i] not in ["you", "You", "Thanks for watching!"]:
+            full_transcription += transcribed_files[i]
 
     print(full_transcription)
-    return full_transcription
+    for filename in os.listdir(OUTPUT_DIR):
+        if os.path.isfile(os.path.join(OUTPUT_DIR, filename)):
+            os.remove(os.path.join(OUTPUT_DIR, filename))
     
-
+    
+    
+    return full_transcription
 
 ## usage
 if __name__ == '__main__':   

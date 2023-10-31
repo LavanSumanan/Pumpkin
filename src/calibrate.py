@@ -1,6 +1,6 @@
 # =========== IMPORTS ===========
 
-# imports for io and
+# imports for io
 from gpiozero import LED, Button
 from signal import pause
 
@@ -11,33 +11,37 @@ from time import sleep
 # imports for getting people's audio input
 from audio_input import get_avg_amplitude_of_samples
 
+# imports for tts
+from text_to_speech import play_audio
+
 # =========== IO SETUP ===========
-talk_led = LED(22)
-silence_led = LED(17)
 button = Button(27, hold_time=1)
+visible_led = LED(23)
 
 # =========== INITIALIZATION ===========
-talk_led.off()
-silence_led.off()
 NUM_CALIBRATION_TRIALS = 3
+warn_path = '../recordings/warn'
 
 def calibrate_threshold():
     print("calibrating")
     
+    play_audio(f'{warn_path}/talk.mp3')
     sleep(1)
-    talk_led.on()
+    visible_led.on()
     talking_amp = get_avg_amplitude_of_samples(NUM_CALIBRATION_TRIALS)
     print("talk: ", talking_amp)
-    talk_led.off()
+    visible_led.off()
     
+    play_audio(f'{warn_path}/silent.mp3')
     sleep(1)
-    silence_led.on()
+    visible_led.on()
     silence_amp = get_avg_amplitude_of_samples(NUM_CALIBRATION_TRIALS)
-    silence_led.off()
+    visible_led.off()
     print("silence: ", silence_amp)
 
     threshold_avg = geometric_mean(talking_amp, silence_amp)
     print("threshold: ", threshold_avg)
+    play_audio(f'{warn_path}/complete.mp3')
 
 # =========== MAIN LOOP ===========
 button.when_held = calibrate_threshold

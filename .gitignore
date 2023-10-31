@@ -3,3 +3,6 @@
 .DS_Store
 __pycache__
 src/test.py
+recordings/test/*
+recordings/user/*
+recordings/pumpkin*/*

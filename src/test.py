@@ -79,7 +79,7 @@
 # ttsExtension = "wav" if highQualityTts else "mp3"
 # print(ttsExtension)
 
-import os
+# import os
 
 # highQualityTts = False # flip flag to use high vs. low quality TTS
 # ttsExtension = 'wav' if highQualityTts else 'mp3'
@@ -132,7 +132,61 @@ import os
 # get_pumpkin_file_name(trick=True)
 
 # from text_to_speech import tts, play_audio
-# tts('Talk as a user would when the light turns on', '../recordings/warn/talk.mp3')
-# play_audio('../recordings/warn/talk.mp3')
+# tts('Calibration complete', '../recordings/warn/complete.mp3')
 # tts('Record background noise when the light turns on', '../recordings/warn/silent.mp3')
 # play_audio('../recordings/warn/silent.mp3')
+
+# from gpiozero import Servo
+# from time import sleep
+
+# servo = Servo(18)
+# servo.value = 1
+# sleep(2)
+# servo.value = -1
+
+# try:
+#     while True:
+#         servo.value = -1
+#         sleep(2)
+#         servo.value = 1
+#         sleep(2)
+# except KeyboardInterrupt:
+#     print("Program stopped")
+
+# from text_to_speech import tts, tts_high_quality, play_audio
+# tts('Fine, you can have just a bit of my candy!', "../recordings/dispense.mp3")
+# tts_high_quality('Fine, you can have just a bit of my candy!', "../recordings/dispense.wav")
+# play_audio("../recordings/dispense.mp3")
+# play_audio("../recordings/dispense.wav")
+
+# from audio_input_v2 import reset, get_audio
+# reset(0.01893387)
+# get_audio()
+
+# full_transcription = ""
+
+# transcribed_files = {
+#     0: "Hello world. ",
+#     1: "This is cool. ",
+#     2: "you",
+#     3: " ",
+#     4: "Pog. ",
+#     5: "You",
+#     6: "Thanks for watching!",
+#     7: "You are so cool. No, you are."
+# }
+# for i in range(len(transcribed_files.keys())):
+#     if transcribed_files[i] not in ["you", "You", "Thanks for watching!"]:
+#         full_transcription += transcribed_files[i]
+
+# print(full_transcription)
+
+from gpt import reset_pumpkin_gpt, get_pumpkin_response
+# from text_to_speech import tts, play_audio
+# messages = reset_pumpkin_gpt()
+# messages.append({"role": "user", "content": "How can you talk?"})
+# trigger_pumpkin_ask_question(messages)
+# print(messages)
+# response = get_pumpkin_response(messages)
+# print(response)
+# play_audio('../recordings/test/pumpkinquestion.mp3')

@@ -104,6 +104,7 @@ def get_audio_input(threshold_avg):
         if started_speaking and check_speech_done(threshold_avg, sample):
             print("---LOG: end of speech")
             write(filename, freq, recording)
+            break
 
     full_transcription = transcribe(filename)
     print(full_transcription)
