@@ -10,20 +10,21 @@ import numpy as np
 from time import perf_counter, sleep
 from multiprocessing import Process, Queue
 
-from speech_to_text import transcribe
+from speech_to_text import transcribe, transcribe_multiprocessing
 
 # ===SETUP===
 
 # Sampling frequency
 freq = 44100
 # Recording duration (s)
-duration_s = 2
+duration_short = 1
+duration_long = 3
 
-def get_audio_chunk():
+def get_audio_chunk(duration):
     print("started recording")
     # Start recorder with the given values of 
     # duration and sample frequency
-    recording = sd.rec(int((duration_s) * freq), samplerate=freq, channels=1, blocking=True)
+    recording = sd.rec(int((duration) * freq), samplerate=freq, channels=1, blocking=True)
     # Record audio for the given number of seconds
     print("stopped recording")
     return recording    
@@ -34,7 +35,7 @@ def get_avg_amplitude(sample):
 def get_avg_amplitude_of_samples(num_trials):
     samples = []
     for i in range(num_trials):
-        samples.append(get_audio_chunk())
+        samples.append(get_audio_chunk(duration_long))
     
     amps = [get_avg_amplitude(sample) for sample in samples]
     avg_amplitude = sum(amps)/len(amps)
@@ -77,10 +78,38 @@ def get_audio_input_test(number):
 Requirements:
 1) start listening when kid starts speaking     ✅
 2) stop listening when kid finishes speaking    ✅
-3) transcribe on the fly                        x
+3) transcribe on the fly                        ✅
 """
 
 def get_audio_input(threshold_avg):
+    print("##### RECORDING #####\n")
+    recording = np.empty(0)
+    filename = f"recordings/recording0.wav"
+    
+    started_speaking = False
+
+    while True:
+        sample = get_audio_chunk(duration_short)
+        
+        if not started_speaking:
+            t1 = perf_counter()
+            started_speaking = check_speech_started(threshold_avg, sample)
+            t2 = perf_counter()
+            print("checking for start of speech took ", round(t2-t1, 2), " seconds")
+            if started_speaking: print("---LOG: started speaking")
+        
+        if started_speaking:
+            recording = np.append(recording, sample)
+        
+        if started_speaking and check_speech_done(threshold_avg, sample):
+            print("---LOG: end of speech")
+            write(filename, freq, recording)
+
+    full_transcription = transcribe(filename)
+    print(full_transcription)
+    return full_transcription
+
+def get_audio_input_multiprocessing(threshold_avg):
     print("##### RECORDING #####\n")
     recording = np.empty(0)
     recordings_counter = 0
@@ -92,7 +121,7 @@ def get_audio_input(threshold_avg):
     jobs = Queue()
     # results are tuples of type (index: int, transcription: string)
     results = Queue()
-    processes = [Process(target=transcribe, args=(jobs, results)) for i in range(MAX_PROCESSES)]
+    processes = [Process(target=transcribe_multiprocessing, args=(jobs, results)) for i in range(MAX_PROCESSES)]
     for process in processes:
         process.start()
 
@@ -100,7 +129,7 @@ def get_audio_input(threshold_avg):
 
     while True:
         t1 = perf_counter()
-        sample = get_audio_chunk()
+        sample = get_audio_chunk(duration_long)
         t2 = perf_counter()
         print("getting audio sample took ", round(t2-t1, 2), " seconds")
         
@@ -108,7 +137,7 @@ def get_audio_input(threshold_avg):
             t1 = perf_counter()
             started_speaking = check_speech_started(threshold_avg, sample)
             t2 = perf_counter()
-            print("checking for pauses took ", round(t2-t1, 2), " seconds")
+            print("checking for start of speech took ", round(t2-t1, 2), " seconds")
             if started_speaking: print("---LOG: started speaking")
         
         if started_speaking:
@@ -177,5 +206,5 @@ def get_audio_input(threshold_avg):
     That's why he's so hot. What a chad.
     """
 
-if __name__ == "__main__":
-    get_audio_input(0.03056035)
+# if __name__ == "__main__":
+    # get_audio_input(0.03056035)

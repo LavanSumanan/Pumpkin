@@ -1,6 +1,6 @@
-# # import os
-# #  for file in sorted(os.listdir('audio_out')):
-# #     if file.split(".")[-1] != "wav": break
+# import os
+#     for file in sorted(os.listdir('audio_out')):
+#         if file.split(".")[-1] != "wav": break
 
 # import numpy as np
 # from multiprocessing import Process, Queue, current_process
@@ -37,22 +37,22 @@
 # for process in processes:
 #     process.join()
 
-from text_to_speech import tts, tts_high_quality, play_audio
-file_out = 'fun.mp3'
-tts('Testing 1 2 3.', file_out)
+# from text_to_speech import tts, tts_high_quality, play_audio
+# file_out = 'fun.mp3'
+# tts('Testing 1 2 3.', file_out)
 
-from gpiozero import LED, Button, MotionSensor
-from signal import pause
+# from gpiozero import LED, Button, MotionSensor
+# from signal import pause
 
-from time import sleep
+# from time import sleep
 
-talk_led = LED(22)
+# talk_led = LED(22)
 # silence_led = LED(17)
-button = Button(27, hold_time=1)
-pir = MotionSensor(18)
+# button = Button(27, hold_time=1)
+# pir = MotionSensor(18)
 
-talk_led.off()
-pir.wait_for_no_motion()
+# talk_led.off()
+# pir.wait_for_no_motion()
 # silence_led.off()
 
 # def fake_calibration():
@@ -74,3 +74,11 @@ pir.wait_for_no_motion()
 # pir.when_no_motion = lambda _: print("motion no longer detected")
 
 # pause()
+
+# highQualityTts = True
+# ttsExtension = "wav" if highQualityTts else "mp3"
+# print(ttsExtension)
+
+# import os
+# pumpkin_start_file_index = sorted(os.listdir('../recordings/pumpkin_start'), reverse=True)[0][0] if sorted(os.listdir('../recordings/pumpkin_start')) else 0
+# print(pumpkin_start_file_index)
