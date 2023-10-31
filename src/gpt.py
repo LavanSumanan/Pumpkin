@@ -11,11 +11,14 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def reset_pumpkin_gpt():
-    system_prompt_message = "Pretend to be a funny jack o lantern. A kid is trying to steal from your candy bowl! Respond as jack o lantern would with a short, one sentence answer.'"
+    system_prompt_message = "Pretend to be a funny jack o lantern. A kid is trying to steal from your candy bowl! Respond as jack o lantern would with a short, one sentence answer. Then ask the kid what their name is.'"
     return [{"role": "system", "content": system_prompt_message}]
 
 def get_pumpkin_response(messages):
+    t1 = perf_counter()
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
+    t2 = perf_counter()
+    print("GPT response time:", t2-t1)
     messages.append(response["choices"][0]["message"])
     return messages[-1]["content"]
 

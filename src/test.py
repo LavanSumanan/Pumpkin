@@ -41,15 +41,31 @@
 # file_out = 'fun.mp3'
 # tts('Testing 1 2 3.', file_out)
 
-# from gpiozero import LED, Button, MotionSensor
+from gpiozero import LED, Button, MotionSensor, Servo
 # from signal import pause
 
-# from time import sleep
+from time import sleep
 
 # talk_led = LED(22)
 # silence_led = LED(17)
 # button = Button(27, hold_time=1)
 # pir = MotionSensor(18)
+# red_led = LED(22)
+# green_led = LED(17)
+# visible_led = LED(23)
+
+servo = Servo(18)
+
+for i in range(4):
+    servo.value = -1
+    sleep(0.7)
+    servo.value = 1
+    sleep(0.7)
+servo.value = 0
+
+# visible_led.off()
+# green_led.on()
+# red_led.on()
 
 # talk_led.off()
 # pir.wait_for_no_motion()
@@ -175,13 +191,14 @@
 #     6: "Thanks for watching!",
 #     7: "You are so cool. No, you are."
 # }
-# for i in range(len(transcribed_files.keys())):
-#     if transcribed_files[i] not in ["you", "You", "Thanks for watching!"]:
-#         full_transcription += transcribed_files[i]
+
+# for _, val in transcribed_files.items():
+#     if val not in ["you", "You", "Thanks for watching!"]:
+#         full_transcription += val
 
 # print(full_transcription)
 
-from gpt import reset_pumpkin_gpt, get_pumpkin_response
+# from gpt import reset_pumpkin_gpt, get_pumpkin_response
 # from text_to_speech import tts, play_audio
 # messages = reset_pumpkin_gpt()
 # messages.append({"role": "user", "content": "How can you talk?"})

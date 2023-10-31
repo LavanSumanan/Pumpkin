@@ -170,9 +170,10 @@ def get_audio():
  
     full_transcription = ""
     
-    for i in range(len(transcribed_files.keys()) - 1):
-        if transcribed_files[i] not in ["you", "You", "Thanks for watching!"]:
-            full_transcription += transcribed_files[i]
+    # skip last transcription because it's either empty space, a hallucination, or an ad
+    for _, val in transcribed_files.items():
+        if val not in ["you", "You", "Thanks for watching!"]:
+            full_transcription += val
 
     print(full_transcription)
     for filename in os.listdir(OUTPUT_DIR):
