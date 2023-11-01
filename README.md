@@ -8,3 +8,12 @@ It's a pumpkin that doesn't want you to steal from its candy bowl! It'll have a 
 `pip install -r requirements.txt`
 - Generate an OpenAI API Key, create a .env file, and add the following line to it:
 `OPENAI_API_KEY = <insert your key>`
+- Generate a Resemble API Key, add the following line to .env:
+`RESEMBLE_API_KEY = <insert your key>`
+- Update recording paths in `main.py` to match your recordings
+- Enjoy!
+
+### Credits
+- Arthur Bright for implementing text to speech and optimizing the speech to text code
+- Luxman Sumanan and Catie Balasubramanian for giving insights on the mechanical design (which I should have paid more attention to)
+- My parents for supporting this project via time, resources, and carving the pumpkin itself
