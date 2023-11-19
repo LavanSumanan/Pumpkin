@@ -17,11 +17,12 @@ def transcribe_multiprocessing(jobs, results):
     while True:
         job_input = jobs.get()
         if not job_input:
+            print("ending processing")
             break
         (index, filename) = job_input
         t_start = perf_counter()
         audio_file = open(filename, "rb")
         transcript = openai.Audio.translate(model="whisper-1", file=audio_file, response_format="text")
         t_stop = perf_counter()
-        print("Time taken (seconds): ", round(t_stop-t_start, 2))
+        print("Time taken to transcribe (seconds): ", round(t_stop-t_start, 2))
         results.put((index, transcript))

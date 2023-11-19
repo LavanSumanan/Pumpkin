@@ -34,11 +34,11 @@ SERVO_MIN = -1
 SERVO_MAX = 1
 # audio input
 # THRESHOLD_AVG = None
-THRESHOLD_AVG = 0.01893387
+THRESHOLD_AVG = 0.07791862
 # gpt
 messages = reset_pumpkin_gpt()
 # tts
-highQualityTts = False # flip flag to use high vs. low quality TTS
+highQualityTts = True # flip flag to use high vs. low quality TTS
 ttsExtension = 'wav' if highQualityTts else 'mp3'
 def tts_call(text, file):
     if highQualityTts:
@@ -70,7 +70,7 @@ def get_pumpkin_file_name(path=pumpkin_response_path, random=False):
     
     index = index_map[path]
     
-    if random: return f'{path}/{randint(0,9)}pumpkin.{ttsExtension}'
+    if random: return f'{path}/{randint(1,10)}pumpkin.{ttsExtension}'
     
     index += 1
     filename = f'{path}/{index}pumpkin.{ttsExtension}'
@@ -102,36 +102,67 @@ def reset_user_recordings():
             os.remove(os.path.join(user_path, filename))
 reset_user_recordings()
 
+def fallback_main():
+    print("-------------- START --------------")
+    
+    play_audio_io(f'{recording_path}/pumpkin_start/{randint(1,11)}pumpkin.wav')
+    
+    audios = ['heehee.wav', 'haha.wav', 'laugh.wav', 'stop.wav']
+    audio = audios[randint(0,3)]
+    play_audio_io(f'{recording_path}/{audio}')
+    sleep(1)
+    # play_audio(f'{recording_path}/haha.wav')
+    # play_audio(f'{recording_path}/hoohoo.wav')
+    # play_audio(f'{recording_path}/stop.wav')
+    
+    play_audio_io(f'{recording_path}/dispense.{ttsExtension}')
+    print("Dispensing candy!!")
+    for i in range(2):
+        servo.value = -1
+        sleep(0.7)
+        servo.value = 1
+        sleep(0.7)
+    servo.value = 0
+    
+    play_audio_io(f'{recording_path}/pumpkin_stop/{randint(1,6)}pumpkin.wav')
+    
+    sleep(10)
+    print('-------------- READY TO START --------------')
+
 def run_main():
     print("-------------- START --------------")
     # reset pumpkin gpt's context
     messages = reset_pumpkin_gpt()
-    pumpkin_audio_file = None
+    pumpkin_audio_file = None    
     
     # startle person by talking for the first time
-    if pumpkin_start_file_index < 10:
+    print(pumpkin_start_file_index)
+    if pumpkin_start_file_index < 9:
         pumpkin_audio_file = get_pumpkin_file_name(pumpkin_start_path)
         tts_call(get_pumpkin_response(messages), pumpkin_audio_file)
     else:
         pumpkin_audio_file = get_pumpkin_file_name(pumpkin_start_path, random=True)
-    print('pumpkin start audio file name: ', pumpkin_audio_file)
-    
-    pumpkin_audio_file = get_pumpkin_file_name()
-    tts_call(get_pumpkin_response(messages), pumpkin_audio_file)
+    print(pumpkin_audio_file)
     play_audio_io(pumpkin_audio_file)
     
-    # listen to person's response and add to pumpkin gpt's context
-    messages.append({"role": "user", "content": get_audio_io()})
     
-    # pumpkin gpt responds to person
-    messages.append({"role": "system", "content": "Respond to the kid's message in a short, fun sentence, and then ask the kid what their favourite part of Halloween is."})
-    tts_call(get_pumpkin_response(messages), pumpkin_audio_file)
-    play_audio_io(pumpkin_audio_file)
+    # sleep(2)
+    
+    # tts_high_quality('Stop')
+    
+    # # listen to person's response and add to pumpkin gpt's context
+    # messages.append({"role": "user", "content": get_audio_io()})
+    
+    # # pumpkin gpt responds to person
+    # messages.append({"role": "system", "content": "Respond to the kid's message in a short, fun sentence, and then ask the kid what their favourite part of Halloween is."})
+    # tts_call(get_pumpkin_response(messages), pumpkin_audio_file)
+    # play_audio_io(pumpkin_audio_file)
     
     # listen to person again
-    messages.append({"role": "user", "content": get_audio_io()})
+    # messages.append({"role": "user", "content": get_audio_io()})
     
     # pumpkin gpt responds and asks "trick or treat"
+    pumpkin_audio_file = get_pumpkin_file_name()
     messages.append({"role": "system", "content": "Respond to the kid in a short, fun sentence, and then naturally shift the conversation to asking the kids 'Would you like a trick or a treat?'"})
     tts_call(get_pumpkin_response(messages), pumpkin_audio_file)
     play_audio_io(pumpkin_audio_file)
@@ -141,9 +172,9 @@ def run_main():
         play_audio_io(f'{recording_path}/dispense.{ttsExtension}')
         print("Dispensing candy!!")
         for i in range(4):
-            servo.value = SERVO_MIN
+            servo.value = -1
             sleep(0.7)
-            servo.value = SERVO_MAX
+            servo.value = 1
             sleep(0.7)
         servo.value = 0
     else:
@@ -166,6 +197,6 @@ def run_main():
     print("-------------- READY TO RUN --------------")
 
 # =========== MAIN LOOP ===========
-pir.when_motion = run_main
+pir.when_motion = fallback_main
 
 pause()

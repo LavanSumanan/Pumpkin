@@ -22,7 +22,7 @@ SAMPLE_RATE = 44100
 CHANNELS = 1
 OUTPUT_DIR = "../recordings/user"
 SHORT_LENGTH = int(0.4 * SAMPLE_RATE)
-LONG_LENGTH = int(5.0 * SAMPLE_RATE)
+LONG_LENGTH = int(3.0 * SAMPLE_RATE)
 MIN_LENGTH = int(1.0 * SAMPLE_RATE)
 TINY_LENGTH = int(0.2 * SAMPLE_RATE)
 
@@ -126,10 +126,10 @@ def get_audio():
     global recording_index
     global desired_recording_index
 
-    # raspberry pi 4 has 4 core CPU, one core is running this script
-    MAX_PROCESSES = 3
+    # raspberry pi 4 has 4 core CPU, one core is running this script, one core is running main loop
+    MAX_PROCESSES = 1
     # jobs are tuples of type (index: int, filename: string)
-        # insert False 3 times when recording ends (one to end each process)
+        # insert False MAX_PROCESSES times when recording ends (one to end each process)
     jobs = Queue()
     # results are tuples of type (index: int, transcription: string)
     results = Queue()
@@ -164,10 +164,14 @@ def get_audio():
 
     # files are a hashmap of type [index: int]: transcription: string
     transcribed_files = {}
+    max_index = 0
     while not results.empty():
         (index, transcription) = results.get()
+        max_index = max(index, max_index)
         transcribed_files[index] = transcription
- 
+    # remove last two entries because they're usually garbage
+    transcribed_files.pop(max_index)
+    if transcribed_files[max_index - 1]: transcribed_files.pop(max_index - 1)
     full_transcription = ""
     
     # skip last transcription because it's either empty space, a hallucination, or an ad

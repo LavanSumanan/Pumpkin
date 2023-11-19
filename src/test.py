@@ -41,10 +41,10 @@
 # file_out = 'fun.mp3'
 # tts('Testing 1 2 3.', file_out)
 
-from gpiozero import LED, Button, MotionSensor, Servo
+# from gpiozero import LED, Button, MotionSensor, Servo
 # from signal import pause
 
-from time import sleep
+# from time import sleep
 
 # talk_led = LED(22)
 # silence_led = LED(17)
@@ -54,14 +54,14 @@ from time import sleep
 # green_led = LED(17)
 # visible_led = LED(23)
 
-servo = Servo(18)
+# servo = Servo(18)
 
-for i in range(4):
-    servo.value = -1
-    sleep(0.7)
-    servo.value = 1
-    sleep(0.7)
-servo.value = 0
+# for i in range(4):
+#     servo.value = -1
+#     sleep(0.7)
+#     servo.value = 1
+#     sleep(0.7)
+# servo.value = 0
 
 # visible_led.off()
 # green_led.on()
@@ -176,8 +176,21 @@ servo.value = 0
 # play_audio("../recordings/dispense.wav")
 
 # from audio_input_v2 import reset, get_audio
-# reset(0.01893387)
-# get_audio()
+# reset(0.07)
+# print(get_audio())
+
+from speech_to_text import transcribe
+from text_to_speech import tts_high_quality
+from gpt import get_pumpkin_response, reset_pumpkin_gpt
+
+for i in range(5,11):
+    start_file = f"../recordings/pumpkin_start/{i}pumpkin.mp3"
+    print(start_file)
+    tts_high_quality(transcribe(start_file), f"../recordings/pumpkin_start/{i}pumpkin.wav")
+    messages = reset_pumpkin_gpt()
+    messages.append({"role": "system", "content": "Tell the kid to shoo with a quick, witty sentence."})
+    stop_script = get_pumpkin_response(messages)
+    tts_high_quality(stop_script, f"../recordings/pumpkin_stop/{i}pumpkin.wav")
 
 # full_transcription = ""
 
